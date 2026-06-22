@@ -1,0 +1,4 @@
+build/
+qt6/
+*.user
+*.autosave
