@@ -21,17 +21,24 @@ int main(int argc, char *argv[])
     parser.addHelpOption();
     parser.addVersionOption();
     QCommandLineOption selfTestOpt(QStringList{QStringLiteral("self-test")}, QStringLiteral("Run self tests"));
+    QCommandLineOption unlockTestOpt(QStringList{QStringLiteral("unlock-wallet")},
+                                     QStringLiteral("Unlock wallet via CEREBRA_PASSPHRASE (test)"),
+                                     QStringLiteral("path"));
     QCommandLineOption nodeOpt(QStringList{QStringLiteral("n"), QStringLiteral("node")},
                                QStringLiteral("Node RPC URL"), QStringLiteral("url"));
     QCommandLineOption walletOpt(QStringList{QStringLiteral("w"), QStringLiteral("wallet")},
                                  QStringLiteral("Wallet file path"), QStringLiteral("path"));
     parser.addOption(selfTestOpt);
+    parser.addOption(unlockTestOpt);
     parser.addOption(nodeOpt);
     parser.addOption(walletOpt);
     parser.process(app);
 
     if (parser.isSet(selfTestOpt))
         return Cereblix::runSelfTest() ? 0 : 1;
+
+    if (parser.isSet(unlockTestOpt))
+        return Cereblix::runUnlockWalletTest(parser.value(unlockTestOpt)) ? 0 : 1;
 
     if (parser.isSet(nodeOpt))
         Cereblix::AppSettings::instance().setRpcUrl(parser.value(nodeOpt));

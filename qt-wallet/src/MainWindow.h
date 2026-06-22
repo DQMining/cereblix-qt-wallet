@@ -49,6 +49,7 @@ private:
     TxBuilder m_txBuilder;
     LocalNodeManager m_localNode;
     QTimer m_refreshTimer;
+    bool m_warnedEnvPassphrase = false;
 
     QTabWidget *m_tabs = nullptr;
     OverviewPage *m_overview = nullptr;

@@ -71,7 +71,6 @@ void SendPage::onSendClicked()
         return;
     }
 
-    quint64 fee = 0;
     if (m_feeEdit->text().trimmed().isEmpty()) {
         m_sendButton->setEnabled(false);
         m_window->txBuilder()->suggestedFee([this, amount, to](quint64 suggested, QString feeErr) {
@@ -86,7 +85,7 @@ void SendPage::onSendClicked()
         return;
     }
 
-    fee = parseCrbAmount(m_feeEdit->text(), &ok);
+    const quint64 fee = parseCrbAmount(m_feeEdit->text(), &ok);
     if (!ok) {
         QMessageBox::warning(this, QStringLiteral("Send"), QStringLiteral("Enter a valid fee."));
         return;
@@ -96,19 +95,43 @@ void SendPage::onSendClicked()
 
 void SendPage::doSend(quint64 amount, quint64 fee, const QString &to)
 {
-    const QString from = m_fromCombo->currentData().toString();
+    const QString fromLabel = m_fromCombo->currentData().toString();
+    const quint64 total = amount + fee;
     m_sendButton->setEnabled(false);
-    m_window->txBuilder()->send(to, amount, fee, from, [this](QString txid, QString error) {
+
+    m_window->txBuilder()->resolveFrom(fromLabel, total, [this, amount, fee, to, fromLabel, total](
+                                                             const KeyEntry *from, QString error) {
         m_sendButton->setEnabled(true);
-        if (!error.isEmpty()) {
-            QMessageBox::warning(this, QStringLiteral("Send failed"), error);
+        if (from == nullptr) {
+            QMessageBox::warning(this, QStringLiteral("Send"), error);
             return;
         }
-        QMessageBox::information(this, QStringLiteral("Sent"),
-                                 QStringLiteral("Transaction broadcast.\nTxID: %1").arg(txid));
-        m_toEdit->clear();
-        m_amountEdit->clear();
-        m_window->refreshAll();
+
+        const QString confirmText =
+            QStringLiteral("Send %1 to\n%2\n\nFee: %3\nFrom: %4 (%5)\nTotal debit: %6")
+                .arg(formatCrb(amount), to, formatCrb(fee), from->label, from->addr, formatCrb(total));
+
+        const auto answer = QMessageBox::question(this, QStringLiteral("Confirm send"), confirmText,
+                                                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+
+        m_sendButton->setEnabled(false);
+        m_window->txBuilder()->send(to, amount, fee, fromLabel.isEmpty() ? from->label : fromLabel,
+                                    [this](QString txid, QString sendError) {
+                                        m_sendButton->setEnabled(true);
+                                        if (!sendError.isEmpty()) {
+                                            QMessageBox::warning(this, QStringLiteral("Send failed"),
+                                                                 sendError);
+                                            return;
+                                        }
+                                        QMessageBox::information(this, QStringLiteral("Sent"),
+                                                                 QStringLiteral("Transaction broadcast.\nTxID: %1")
+                                                                     .arg(txid));
+                                        m_toEdit->clear();
+                                        m_amountEdit->clear();
+                                        m_window->refreshAll();
+                                    });
     });
 }
 

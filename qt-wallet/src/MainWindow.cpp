@@ -8,6 +8,7 @@
 #include "ui/ReceivePage.h"
 #include "ui/SendPage.h"
 #include "ui/SettingsPage.h"
+#include "ui/WalletEncrypt.h"
 
 #include <QInputDialog>
 #include <QMenuBar>
@@ -31,6 +32,14 @@ MainWindow::MainWindow(QWidget *parent)
         std::exit(1);
     }
 
+    if (!crypto_aead_aes256gcm_is_available()) {
+        QMessageBox::critical(
+            this, QStringLiteral("Cereblix Wallet"),
+            QStringLiteral("This CPU does not support AES-NI, required for wallet encryption.\n"
+                           "The wallet cannot run on this system."));
+        std::exit(1);
+    }
+
     setupUi();
 
     const auto &settings = AppSettings::instance();
@@ -48,13 +57,31 @@ MainWindow::MainWindow(QWidget *parent)
 
     ensureWalletUnlocked();
 
-    if (m_wallet.keys().isEmpty()) {
+    const bool wasEmpty = m_wallet.keys().isEmpty();
+    if (wasEmpty) {
         const auto answer = QMessageBox::question(
             this, QStringLiteral("Welcome"),
             QStringLiteral("No addresses in this wallet yet. Create your first receive address now?"));
         if (answer == QMessageBox::Yes) {
             QString error;
-            m_wallet.addKey(QStringLiteral("main"), nullptr, &error);
+            if (m_wallet.addKey(QStringLiteral("main"), nullptr, &error) && !m_wallet.isEncrypted()) {
+                const auto encAnswer = QMessageBox::question(
+                    this, QStringLiteral("Protect your wallet"),
+                    QStringLiteral("Your private keys are currently stored in plaintext.\n\n"
+                                   "Protect this wallet with a passphrase now? (recommended)"),
+                    QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+                if (encAnswer == QMessageBox::Yes) {
+                    if (promptEncryptWallet(this, &m_wallet))
+                        showStatusMessage(QStringLiteral("Wallet encrypted"));
+                } else {
+                    QMessageBox::warning(
+                        this, QStringLiteral("Unencrypted wallet"),
+                        QStringLiteral("Private keys are saved in plaintext in wallet.json until you "
+                                       "encrypt in Settings."));
+                }
+            } else if (!error.isEmpty()) {
+                QMessageBox::warning(this, QStringLiteral("Wallet"), error);
+            }
         }
     }
 
@@ -112,8 +139,15 @@ bool MainWindow::promptUnlockIfNeeded()
     const QByteArray env = qgetenv("CEREBRA_PASSPHRASE");
     if (!env.isEmpty()) {
         QString error;
-        if (m_wallet.unlock(QString::fromUtf8(env), &error))
+        if (m_wallet.unlock(QString::fromUtf8(env), &error)) {
+            if (!m_warnedEnvPassphrase) {
+                m_warnedEnvPassphrase = true;
+                showStatusMessage(
+                    QStringLiteral("Passphrase loaded from CEREBRA_PASSPHRASE (visible to other processes)"),
+                    10'000);
+            }
             return true;
+        }
     }
 
     bool ok = false;

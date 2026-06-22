@@ -2,15 +2,16 @@
 
 #include "crypto/CereblixCrypto.h"
 
-#include <QApplication>
-#include <QClipboard>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QInputDialog>
 #include <QLabel>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSharedPointer>
+#include <QTextEdit>
 #include <QVBoxLayout>
 
 namespace Cereblix {
@@ -18,6 +19,7 @@ namespace Cereblix {
 AddressesPage::AddressesPage(MainWindow *window, QWidget *parent)
     : QWidget(parent)
     , m_window(window)
+    , m_secureClipboard(this)
 {
     auto *layout = new QVBoxLayout(this);
 
@@ -130,13 +132,36 @@ void AddressesPage::onExport()
 
     const auto answer = QMessageBox::question(
         this, QStringLiteral("Export private key"),
-        QStringLiteral("Reveal private key for %1? Make sure nobody can see your screen.").arg(label));
+        QStringLiteral("Reveal private key for %1?\n\nMake sure nobody can see your screen. "
+                       "Clipboard history tools may retain copied keys.")
+            .arg(label));
     if (answer != QMessageBox::Yes)
         return;
 
-    QApplication::clipboard()->setText(entry->privHex);
-    QMessageBox::information(this, QStringLiteral("Exported"),
-                             QStringLiteral("Private key copied to clipboard."));
+    auto *dialog = new QDialog(this);
+    dialog->setWindowTitle(QStringLiteral("Private key — %1").arg(label));
+    auto *layout = new QVBoxLayout(dialog);
+    layout->addWidget(new QLabel(QStringLiteral("Address: %1").arg(entry->addr), dialog));
+
+    auto *keyView = new QTextEdit(dialog);
+    keyView->setReadOnly(true);
+    keyView->setFontFamily(QStringLiteral("Consolas"));
+    keyView->setPlainText(entry->privHex);
+    layout->addWidget(keyView);
+
+    auto *copyBtn = new QPushButton(QStringLiteral("Copy to clipboard (clears in 30s)"), dialog);
+    connect(copyBtn, &QPushButton::clicked, dialog, [this, entry, copyBtn]() {
+        m_secureClipboard.copySensitiveText(entry->privHex);
+        copyBtn->setEnabled(false);
+        copyBtn->setText(QStringLiteral("Copied — clipboard will clear in 30 seconds"));
+    });
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+    connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    layout->addWidget(copyBtn);
+    layout->addWidget(buttons);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->open();
 }
 
 } // namespace Cereblix

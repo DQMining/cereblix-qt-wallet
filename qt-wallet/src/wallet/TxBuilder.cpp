@@ -98,6 +98,34 @@ void TxBuilder::signAndBroadcast(const KeyEntry *from, const QString &toAddr, qu
     });
 }
 
+void TxBuilder::resolveFrom(const QString &fromAddrOrLabel, quint64 needTotal,
+                            std::function<void(const KeyEntry *from, QString error)> callback)
+{
+    if (!fromAddrOrLabel.isEmpty()) {
+        const KeyEntry *from = m_store->find(fromAddrOrLabel);
+        if (from == nullptr) {
+            callback(nullptr, QStringLiteral("Address or label not found in wallet."));
+            return;
+        }
+        m_client->fetchBalance(from->addr, [from, needTotal, callback](BalanceInfo info, QString error) {
+            if (!error.isEmpty()) {
+                callback(nullptr, error);
+                return;
+            }
+            const quint64 avail = info.spendable > 0 ? info.spendable : info.balance;
+            if (avail < needTotal) {
+                callback(nullptr, QStringLiteral("Insufficient spendable balance."));
+                return;
+            }
+            callback(from, {});
+        });
+        return;
+    }
+
+    pickFundedAddress(m_client, m_store, needTotal,
+                      [callback](KeyEntry *from, QString error) { callback(from, error); });
+}
+
 void TxBuilder::send(const QString &toAddr, quint64 amountSynapses, quint64 feeSynapses,
                      const QString &fromAddrOrLabel,
                      std::function<void(QString txid, QString error)> callback)

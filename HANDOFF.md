@@ -37,17 +37,21 @@ Run:
 | Flag | Description |
 |------|-------------|
 | `--self-test` | Crypto + network smoke test (no GUI) |
+| `--unlock-wallet <path>` | Unlock wallet using `CEREBRA_PASSPHRASE` (test/CI) |
 | `-n`, `--node <url>` | Override RPC URL |
 | `-w`, `--wallet <path>` | Override wallet file path |
 
-Environment: `CEREBRA_PASSPHRASE` — auto-unlock encrypted wallet on startup.
+Environment: `CEREBRA_PASSPHRASE` — auto-unlock encrypted wallet on startup (visible to other processes; see [SECURITY.md](SECURITY.md)).
 
 ## Wallet file
 
 - Default path: `%USERPROFILE%\.cereblix\wallet.json` (same as Go CLI)
 - Format: JSON with ed25519 keys (`crb1…` addresses)
-- Encryption: PBKDF2-SHA256 (200k iterations) + AES-256-GCM (libsodium)
+- Encryption: **PBKDF2-HMAC-SHA256** (200k iterations, RFC 2898) + AES-256-GCM (libsodium, requires AES-NI)
+- Minimum passphrase: **12 characters** (Qt wallet; Go CLI allows 6)
+- Linux: wallet file saved with mode `0600`
 - Settings persisted via `QSettings` (registry on Windows): RPC URL, wallet path, local node options
+- First address creation prompts for encryption (recommended)
 
 ## Consensus / signing
 
@@ -113,7 +117,7 @@ While syncing, the wallet uses the public API; when the local node catches up it
 |---------|-----------|--------|
 | Keygen / import | Yes | Yes |
 | Encrypt / unlock | Yes | Yes |
-| Send / fee | Yes | Yes |
+| Send / fee | Yes (with confirmation dialog) | Yes |
 | RBF speed-up / cancel | Yes | Yes |
 | Balance / spendable | Yes | Yes |
 | History | Yes | Yes |
@@ -128,7 +132,15 @@ While syncing, the wallet uses the public API; when the local node catches up it
 powershell -File tools\crypto_validate.ps1
 ```
 
-Self-test covers: ed25519 sign, wallet round-trip, encrypt/unlock, live `/status`.
+Self-test covers: ed25519 sign, PBKDF2-HMAC-SHA256 vector, wallet round-trip, encrypt/unlock, live `/status`.
+
+`crypto_validate.ps1` verifies Qt can unlock a Go CLI–encrypted wallet (cross-KDF compatibility).
+
+## Security
+
+See **[SECURITY.md](SECURITY.md)** for threat model, encryption details, and operational risks.
+
+**Note:** Wallets encrypted by Qt builds before the PBKDF2-HMAC fix cannot be opened by current builds. Re-encrypt from plaintext if needed.
 
 ## Known limitations
 

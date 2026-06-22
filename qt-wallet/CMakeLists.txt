@@ -20,6 +20,9 @@ set(SOURCES
     src/crypto/Pbkdf2.cpp
     src/node/LocalNodeManager.cpp
     src/util/QrCodeImage.cpp
+    src/util/SecureClipboard.cpp
+    src/util/SecureZero.cpp
+    src/ui/WalletEncrypt.cpp
     src/ui/OverviewPage.cpp
     src/ui/ReceivePage.cpp
     src/ui/SendPage.cpp

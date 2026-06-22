@@ -23,6 +23,9 @@ public:
 
     void suggestedFee(std::function<void(quint64 fee, QString error)> callback);
 
+    void resolveFrom(const QString &fromAddrOrLabel, quint64 needTotal,
+                     std::function<void(const KeyEntry *from, QString error)> callback);
+
 private:
     void signAndBroadcast(const KeyEntry *from, const QString &toAddr, quint64 amount, quint64 fee,
                           quint64 nonce,

@@ -2,6 +2,8 @@
 
 #include "crypto/CereblixCrypto.h"
 #include "crypto/Pbkdf2.h"
+#include "ui/WalletEncrypt.h"
+#include "util/SecureZero.h"
 
 #include <QDir>
 #include <QFile>
@@ -16,6 +18,21 @@
 #include <sodium.h>
 
 namespace Cereblix {
+
+namespace {
+
+void applyWalletFilePermissions(const QString &path)
+{
+#ifndef Q_OS_WIN
+    QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner);
+    const QString parent = QFileInfo(path).absolutePath();
+    if (!parent.isEmpty())
+        QDir().mkpath(parent);
+    QFile::setPermissions(parent, QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+#endif
+}
+
+} // namespace
 
 QJsonObject KeyEntry::toJson() const
 {
@@ -52,7 +69,7 @@ bool WalletStore::load(QString *error)
 {
     m_keys.clear();
     m_encrypted = false;
-    m_passphrase.clear();
+    secureZero(m_passphrase);
 
     QFile file(m_path);
     if (!file.exists())
@@ -96,7 +113,10 @@ bool WalletStore::unlock(const QString &passphrase, QString *error)
         return load(error);
     }
     m_passphrase = passphrase.toUtf8();
-    return decryptKeys(root, m_passphrase, error);
+    const bool ok = decryptKeys(root, m_passphrase, error);
+    if (!ok)
+        secureZero(m_passphrase);
+    return ok;
 }
 
 bool WalletStore::decryptKeys(const QJsonObject &fileObj, const QByteArray &passphrase,
@@ -109,22 +129,28 @@ bool WalletStore::decryptKeys(const QJsonObject &fileObj, const QByteArray &pass
     if (iter <= 0)
         iter = KdfIterations;
 
-    const QByteArray key = pbkdf2Sha256(passphrase, salt, iter, 32);
+    QByteArray key = pbkdf2Sha256(passphrase, salt, iter, 32);
     QVector<unsigned char> plain(cipher.size() + 64);
     unsigned long long plainLen = 0;
-    if (crypto_aead_aes256gcm_decrypt(
-            plain.data(), &plainLen, nullptr,
-            reinterpret_cast<const unsigned char *>(cipher.constData()),
-            static_cast<unsigned long long>(cipher.size()), nullptr, 0,
-            reinterpret_cast<const unsigned char *>(nonce.constData()),
-            reinterpret_cast<const unsigned char *>(key.constData())) != 0) {
+    const int decryptResult = crypto_aead_aes256gcm_decrypt(
+        plain.data(), &plainLen, nullptr,
+        reinterpret_cast<const unsigned char *>(cipher.constData()),
+        static_cast<unsigned long long>(cipher.size()), nullptr, 0,
+        reinterpret_cast<const unsigned char *>(nonce.constData()),
+        reinterpret_cast<const unsigned char *>(key.constData()));
+    secureZero(key);
+    if (decryptResult != 0) {
         if (error)
             *error = QStringLiteral("Wrong passphrase or corrupt wallet.");
+        sodium_memzero(plain.data(), plain.size());
         return false;
     }
 
-    const QJsonDocument doc = QJsonDocument::fromJson(
-        QByteArray(reinterpret_cast<char *>(plain.data()), static_cast<int>(plainLen)));
+    QByteArray plainJson(reinterpret_cast<char *>(plain.data()), static_cast<int>(plainLen));
+    const QJsonDocument doc = QJsonDocument::fromJson(plainJson);
+    sodium_memzero(plain.data(), plain.size());
+    secureZero(plainJson);
+
     m_keys.clear();
     const QJsonArray keys = doc.array();
     for (const QJsonValue &value : keys)
@@ -136,7 +162,7 @@ void WalletStore::lock()
 {
     if (m_encrypted)
         m_keys.clear();
-    m_passphrase.clear();
+    secureZero(m_passphrase);
 }
 
 bool WalletStore::save(QString *error)
@@ -147,7 +173,11 @@ bool WalletStore::save(QString *error)
         return false;
     }
 
+#ifndef Q_OS_WIN
     QDir().mkpath(QFileInfo(m_path).absolutePath());
+    QFile::setPermissions(QFileInfo(m_path).absolutePath(),
+                          QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+#endif
 
     QJsonObject root;
     root.insert(QStringLiteral("version"), 1);
@@ -157,22 +187,25 @@ bool WalletStore::save(QString *error)
         QJsonArray keysArray;
         for (const KeyEntry &entry : m_keys)
             keysArray.append(entry.toJson());
-        const QByteArray plain = QJsonDocument(keysArray).toJson(QJsonDocument::Compact);
+        QByteArray plain = QJsonDocument(keysArray).toJson(QJsonDocument::Compact);
 
         unsigned char salt[16];
         unsigned char nonce[crypto_aead_aes256gcm_NPUBBYTES];
         randombytes_buf(salt, sizeof(salt));
         randombytes_buf(nonce, sizeof(nonce));
 
-        const QByteArray key = pbkdf2Sha256(m_passphrase, QByteArray(reinterpret_cast<char *>(salt), 16),
-                                           KdfIterations, 32);
+        QByteArray key = pbkdf2Sha256(m_passphrase, QByteArray(reinterpret_cast<char *>(salt), 16),
+                                      KdfIterations, 32);
         QVector<unsigned char> cipher(plain.size() + crypto_aead_aes256gcm_ABYTES + 16);
         unsigned long long cipherLen = 0;
-        if (crypto_aead_aes256gcm_encrypt(
-                cipher.data(), &cipherLen, reinterpret_cast<const unsigned char *>(plain.constData()),
-                static_cast<unsigned long long>(plain.size()), nullptr, 0, nullptr,
-                reinterpret_cast<const unsigned char *>(nonce),
-                reinterpret_cast<const unsigned char *>(key.constData())) != 0) {
+        const int encryptResult = crypto_aead_aes256gcm_encrypt(
+            cipher.data(), &cipherLen, reinterpret_cast<const unsigned char *>(plain.constData()),
+            static_cast<unsigned long long>(plain.size()), nullptr, 0, nullptr,
+            reinterpret_cast<const unsigned char *>(nonce),
+            reinterpret_cast<const unsigned char *>(key.constData()));
+        secureZero(plain);
+        secureZero(key);
+        if (encryptResult != 0) {
             if (error)
                 *error = QStringLiteral("Encryption failed.");
             return false;
@@ -206,6 +239,7 @@ bool WalletStore::save(QString *error)
             *error = out.errorString();
         return false;
     }
+    applyWalletFilePermissions(m_path);
     return true;
 }
 
@@ -283,9 +317,10 @@ bool WalletStore::encryptWallet(const QString &passphrase, QString *error)
             *error = QStringLiteral("Nothing to encrypt — create an address first.");
         return false;
     }
-    if (passphrase.size() < 6) {
+    const QString passError = validatePassphrase(passphrase);
+    if (!passError.isEmpty()) {
         if (error)
-            *error = QStringLiteral("Passphrase too short (minimum 6 characters).");
+            *error = passError;
         return false;
     }
     m_encrypted = true;

@@ -7,8 +7,11 @@ Native Qt 6 desktop wallet for [Cereblix (CRB)](https://cereblix.com/).
 - Create and manage `crb1…` addresses (compatible with the CLI wallet)
 - Send and receive CRB via the public API or a local node
 - Transaction history, RBF speed-up/cancel, block explorer (tx/address lookup)
-- QR codes on Receive tab, wallet encryption (PBKDF2 + AES-GCM)
+- QR codes on Receive tab, wallet encryption (PBKDF2-HMAC-SHA256 + AES-GCM)
+- Send confirmation dialog before broadcasting
 - Optional local `cereblixd` node with sync progress
+
+See **[SECURITY.md](SECURITY.md)** for encryption and operational security notes.
 
 ## Prerequisites
 

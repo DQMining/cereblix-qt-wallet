@@ -1,14 +1,15 @@
 #include "ui/SettingsPage.h"
 
 #include "settings/AppSettings.h"
+#include "ui/WalletEncrypt.h"
 
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
-#include <QInputDialog>
 #include <QLabel>
 #include <QMessageBox>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace Cereblix {
@@ -106,6 +107,21 @@ void SettingsPage::refresh()
 void SettingsPage::applyRpcUrl()
 {
     const QString url = m_rpcEdit->text().trimmed();
+    const QUrl parsed(url);
+    const QString host = parsed.host().toLower();
+    const bool knownHost = host == QStringLiteral("cereblix.com")
+                           || host == QStringLiteral("ru.cereblix.com")
+                           || host == QStringLiteral("localhost") || host == QStringLiteral("127.0.0.1");
+    if (!host.isEmpty() && !knownHost) {
+        const auto warn = QMessageBox::warning(
+            this, QStringLiteral("Custom RPC URL"),
+            QStringLiteral("You are connecting to a non-default node:\n%1\n\n"
+                           "Only use RPC endpoints you trust. Continue?")
+                .arg(url),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (warn != QMessageBox::Yes)
+            return;
+    }
     m_window->nodeClient()->setBaseUrl(url);
     m_window->localNode()->setPublicApiUrl(url);
     AppSettings::instance().setRpcUrl(url);
@@ -148,26 +164,9 @@ void SettingsPage::encryptWallet()
                                  QStringLiteral("Wallet is already encrypted."));
         return;
     }
-    bool ok = false;
-    const QString pass = QInputDialog::getText(this, QStringLiteral("Encrypt wallet"),
-                                               QStringLiteral("Passphrase (min 6 chars):"),
-                                               QLineEdit::Password, QString(), &ok);
-    if (!ok || pass.isEmpty())
-        return;
-    const QString confirm = QInputDialog::getText(this, QStringLiteral("Encrypt wallet"),
-                                                    QStringLiteral("Confirm passphrase:"),
-                                                    QLineEdit::Password, QString(), &ok);
-    if (!ok || pass != confirm) {
-        QMessageBox::warning(this, QStringLiteral("Encrypt"), QStringLiteral("Passphrases do not match."));
-        return;
-    }
-    QString error;
-    if (!m_window->walletStore()->encryptWallet(pass, &error)) {
-        QMessageBox::warning(this, QStringLiteral("Encrypt"), error);
-        return;
-    }
-    QMessageBox::information(this, QStringLiteral("Encrypt"),
-                             QStringLiteral("Wallet encrypted successfully."));
+    if (promptEncryptWallet(this, m_window->walletStore()))
+        QMessageBox::information(this, QStringLiteral("Encrypt"),
+                                 QStringLiteral("Wallet encrypted successfully."));
 }
 
 void SettingsPage::toggleLocalNode(bool enabled)

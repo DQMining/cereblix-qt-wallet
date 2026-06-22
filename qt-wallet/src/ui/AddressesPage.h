@@ -2,6 +2,8 @@
 
 #include "MainWindow.h"
 
+#include "util/SecureClipboard.h"
+
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTableWidget>
@@ -23,6 +25,7 @@ private slots:
 
 private:
     MainWindow *m_window;
+    SecureClipboard m_secureClipboard;
     QTableWidget *m_table = nullptr;
     QLineEdit *m_labelEdit = nullptr;
     QLineEdit *m_importKeyEdit = nullptr;
