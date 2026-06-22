@@ -66,4 +66,24 @@ void AppSettings::setLocalNodeEnabled(bool enabled)
     m_store.setValue(QStringLiteral("localNodeEnabled"), enabled);
 }
 
+QString AppSettings::themeMode() const
+{
+    return m_store.value(QStringLiteral("themeMode"), QStringLiteral("system")).toString();
+}
+
+void AppSettings::setThemeMode(const QString &mode)
+{
+    m_store.setValue(QStringLiteral("themeMode"), mode);
+}
+
+int AppSettings::uiScalePercent() const
+{
+    return m_store.value(QStringLiteral("uiScalePercent"), 100).toInt();
+}
+
+void AppSettings::setUiScalePercent(int percent)
+{
+    m_store.setValue(QStringLiteral("uiScalePercent"), qBound(80, percent, 130));
+}
+
 } // namespace Cereblix

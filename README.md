@@ -19,6 +19,30 @@ See **[SECURITY.md](SECURITY.md)** for encryption and operational security notes
 - **CMake 3.16+**
 - **C++17 compiler** (MSVC 2019+, MinGW, or GCC)
 
+## Releases
+
+Prebuilt packages (portable, no installer):
+
+| Platform | Package | Run |
+|----------|---------|-----|
+| **Windows x64** | `dist/cereblix-qt-wallet-windows-x64.zip` | Unzip and run `cereblix-qt-wallet.exe` |
+| **Linux x64** | `dist/cereblix-qt-wallet-linux-x64.tar.gz` | Extract and run `./cereblix-qt-wallet.sh` |
+
+Build locally:
+
+```powershell
+# Windows
+powershell -File tools\package_release_windows.ps1
+```
+
+```bash
+# Linux
+chmod +x tools/package_release_linux.sh
+./tools/package_release_linux.sh
+```
+
+GitHub Actions also builds both targets on tagged releases (`v*`) and as manual workflow runs.
+
 ## Build (Windows)
 
 ```powershell

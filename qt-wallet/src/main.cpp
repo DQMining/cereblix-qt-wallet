@@ -1,12 +1,15 @@
 #include "MainWindow.h"
 #include "SelfTest.h"
 #include "settings/AppSettings.h"
+#include "util/AppTheme.h"
 #include "wallet/WalletStore.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QStyleFactory>
+#include <QStyleHints>
 
 int main(int argc, char *argv[])
 {
@@ -47,6 +50,14 @@ int main(int argc, char *argv[])
 
     if (QStyleFactory::keys().contains(QStringLiteral("Fusion")))
         app.setStyle(QStringLiteral("Fusion"));
+
+    Cereblix::AppTheme::apply(&app);
+
+    QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, &app,
+                     [&app]() {
+                         if (Cereblix::AppSettings::instance().themeMode() == QStringLiteral("system"))
+                             Cereblix::AppTheme::apply(&app);
+                     });
 
     Cereblix::MainWindow window;
     window.show();

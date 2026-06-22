@@ -18,7 +18,8 @@ Custom RPC URLs are allowed for self-hosted nodes. The wallet warns when you con
 
 ## Wallet file encryption
 
-- **KDF:** PBKDF2-HMAC-SHA256 (RFC 2898), 200,000 iterations — compatible with the Go `cereblix-wallet` CLI.
+- **KDF:** PBKDF2-HMAC-SHA256 (RFC 2898), **200,000 iterations** — matches the Go `cereblix-wallet` CLI (`kdfIters` in `cmd/cereblix-wallet/main.go`).
+- **Iteration count note:** OWASP and similar guidance often recommend ~600,000 iterations for PBKDF2-HMAC-SHA256 on modern hardware. This wallet stays at 200,000 so encrypted `wallet.json` files remain interchangeable between the Qt GUI and Go CLI. Raising the count requires a coordinated change in both wallets (and re-encryption of existing files). With a 12-character minimum passphrase, 200k is a reasonable tradeoff until upstream bumps the constant.
 - **Cipher:** AES-256-GCM (requires CPU AES-NI / hardware AES support).
 - **Minimum passphrase:** 12 characters; cannot be all digits.
 - **Default:** New wallets are **not** encrypted until you set a passphrase. You are prompted to encrypt when creating your first address.

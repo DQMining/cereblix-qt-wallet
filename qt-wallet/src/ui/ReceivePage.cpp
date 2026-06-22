@@ -1,5 +1,6 @@
 #include "ui/ReceivePage.h"
 
+#include "util/PageLayout.h"
 #include "util/QrCodeImage.h"
 
 #include <QApplication>
@@ -7,7 +8,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
-#include <QVBoxLayout>
+#include <QResizeEvent>
 
 namespace Cereblix {
 
@@ -15,24 +16,38 @@ ReceivePage::ReceivePage(MainWindow *window, QWidget *parent)
     : QWidget(parent)
     , m_window(window)
 {
-    auto *layout = new QVBoxLayout(this);
-    layout->addWidget(new QLabel(QStringLiteral("Your receive addresses:"), this));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    m_qrLabel = new QLabel(this);
+    QVBoxLayout *layout = nullptr;
+    QWidget *inner = attachScrollablePage(this, &layout);
+
+    auto *title = new QLabel(QStringLiteral("Receive"), inner);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    auto *hint = new QLabel(QStringLiteral("Share an address or QR code to receive CRB."), inner);
+    hint->setObjectName(QStringLiteral("pageHint"));
+    layout->addWidget(title);
+    layout->addWidget(hint);
+
+    m_qrLabel = new QLabel(inner);
+    m_qrLabel->setObjectName(QStringLiteral("qrFrame"));
     m_qrLabel->setAlignment(Qt::AlignCenter);
-    m_qrLabel->setMinimumHeight(230);
+    m_qrLabel->setMinimumHeight(200);
+    m_qrLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(m_qrLabel);
 
-    m_list = new QListWidget(this);
-    m_copyButton = new QPushButton(QStringLiteral("Copy address"), this);
-    m_createButton = new QPushButton(QStringLiteral("Create address"), this);
+    m_list = new QListWidget(inner);
+    m_list->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_list->setMinimumHeight(120);
+    layout->addWidget(m_list, 1);
+
+    m_copyButton = new QPushButton(QStringLiteral("Copy address"), inner);
+    m_createButton = new QPushButton(QStringLiteral("Create address"), inner);
+    m_createButton->setProperty("primary", true);
 
     auto *buttons = new QHBoxLayout;
     buttons->addWidget(m_copyButton);
     buttons->addWidget(m_createButton);
     buttons->addStretch();
-
-    layout->addWidget(m_list);
     layout->addLayout(buttons);
 
     connect(m_copyButton, &QPushButton::clicked, this, &ReceivePage::copySelected);
@@ -75,10 +90,11 @@ void ReceivePage::updateQr()
     const int dash = text.indexOf(QStringLiteral(" — "));
     const QString addr = dash >= 0 ? text.mid(dash + 3) : text;
     const QPixmap qr = makeQrPixmap(addr);
+    const int side = qMax(180, qMin(m_qrLabel->width() - 24, 280));
     if (qr.isNull())
         m_qrLabel->setText(addr);
     else
-        m_qrLabel->setPixmap(qr.scaled(220, 220, Qt::KeepAspectRatio, Qt::FastTransformation));
+        m_qrLabel->setPixmap(qr.scaled(side, side, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void ReceivePage::copySelected()
@@ -91,6 +107,13 @@ void ReceivePage::copySelected()
     const QString addr = dash >= 0 ? text.mid(dash + 3) : text;
     QApplication::clipboard()->setText(addr);
     m_window->showStatusMessage(QStringLiteral("Address copied"));
+}
+
+void ReceivePage::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    if (m_list != nullptr && m_list->currentRow() >= 0)
+        updateQr();
 }
 
 } // namespace Cereblix

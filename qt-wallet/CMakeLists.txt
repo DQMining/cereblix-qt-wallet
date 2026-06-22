@@ -7,7 +7,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
-find_package(unofficial-sodium CONFIG REQUIRED)
+
+find_package(unofficial-sodium CONFIG QUIET)
+if(unofficial-sodium_FOUND)
+    set(SODIUM_TARGET unofficial-sodium::sodium)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(SODIUM REQUIRED IMPORTED_TARGET libsodium)
+    set(SODIUM_TARGET PkgConfig::SODIUM)
+endif()
 
 set(SOURCES
     src/main.cpp
@@ -22,6 +30,8 @@ set(SOURCES
     src/util/QrCodeImage.cpp
     src/util/SecureClipboard.cpp
     src/util/SecureZero.cpp
+    src/util/AppTheme.cpp
+    src/util/PageLayout.cpp
     src/ui/WalletEncrypt.cpp
     src/ui/OverviewPage.cpp
     src/ui/ReceivePage.cpp
@@ -45,7 +55,7 @@ target_link_libraries(cereblix-qt-wallet PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::Network
-    unofficial-sodium::sodium
+    ${SODIUM_TARGET}
 )
 
 if(WIN32)

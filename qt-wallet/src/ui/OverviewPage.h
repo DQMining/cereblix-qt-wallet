@@ -4,7 +4,6 @@
 
 #include <QLabel>
 #include <QPushButton>
-#include <QVBoxLayout>
 #include <QWidget>
 
 namespace Cereblix {
@@ -17,13 +16,15 @@ public:
     void refresh();
 
 private:
+    void setStatValue(QLabel *valueLabel, const QString &text);
+
     MainWindow *m_window;
-    QLabel *m_balanceLabel = nullptr;
-    QLabel *m_heightLabel = nullptr;
+    QLabel *m_balanceAmountLabel = nullptr;
+    QLabel *m_heightStat = nullptr;
+    QLabel *m_addressStat = nullptr;
+    QLabel *m_feeStat = nullptr;
     QLabel *m_connectionLabel = nullptr;
-    QLabel *m_feeLabel = nullptr;
     QLabel *m_networkLabel = nullptr;
-    QLabel *m_addressCountLabel = nullptr;
     QPushButton *m_refreshButton = nullptr;
 };
 

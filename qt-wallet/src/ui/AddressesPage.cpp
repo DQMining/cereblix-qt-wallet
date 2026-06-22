@@ -1,6 +1,7 @@
 #include "ui/AddressesPage.h"
 
 #include "crypto/CereblixCrypto.h"
+#include "util/PageLayout.h"
 
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -21,30 +22,40 @@ AddressesPage::AddressesPage(MainWindow *window, QWidget *parent)
     , m_window(window)
     , m_secureClipboard(this)
 {
-    auto *layout = new QVBoxLayout(this);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    m_table = new QTableWidget(0, 4, this);
+    QVBoxLayout *layout = nullptr;
+    QWidget *inner = attachScrollablePage(this, &layout);
+
+    auto *title = new QLabel(QStringLiteral("Addresses"), inner);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    layout->addWidget(title);
+
+    m_table = new QTableWidget(0, 4, inner);
+    m_table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_table->setMinimumHeight(120);
     m_table->setHorizontalHeaderLabels(
         {QStringLiteral("Label"), QStringLiteral("Address"), QStringLiteral("Balance"),
          QStringLiteral("Spendable")});
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    layout->addWidget(m_table);
+    layout->addWidget(m_table, 1);
 
     auto *form = new QFormLayout;
-    m_labelEdit = new QLineEdit(this);
+    m_labelEdit = new QLineEdit(inner);
     m_labelEdit->setPlaceholderText(QStringLiteral("main"));
-    m_importKeyEdit = new QLineEdit(this);
+    m_importKeyEdit = new QLineEdit(inner);
     m_importKeyEdit->setPlaceholderText(QStringLiteral("128-hex private key"));
     form->addRow(QStringLiteral("New label"), m_labelEdit);
     form->addRow(QStringLiteral("Import key"), m_importKeyEdit);
     layout->addLayout(form);
 
     auto *buttons = new QHBoxLayout;
-    auto *createBtn = new QPushButton(QStringLiteral("Create"), this);
-    auto *importBtn = new QPushButton(QStringLiteral("Import"), this);
-    auto *exportBtn = new QPushButton(QStringLiteral("Export key"), this);
+    auto *createBtn = new QPushButton(QStringLiteral("Create"), inner);
+    auto *importBtn = new QPushButton(QStringLiteral("Import"), inner);
+    auto *exportBtn = new QPushButton(QStringLiteral("Export key"), inner);
+    createBtn->setProperty("primary", true);
     buttons->addWidget(createBtn);
     buttons->addWidget(importBtn);
     buttons->addWidget(exportBtn);

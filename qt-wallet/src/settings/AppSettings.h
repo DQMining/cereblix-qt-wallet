@@ -24,6 +24,12 @@ public:
     bool localNodeEnabled() const;
     void setLocalNodeEnabled(bool enabled);
 
+    QString themeMode() const;
+    void setThemeMode(const QString &mode);
+
+    int uiScalePercent() const;
+    void setUiScalePercent(int percent);
+
 private:
     AppSettings();
 

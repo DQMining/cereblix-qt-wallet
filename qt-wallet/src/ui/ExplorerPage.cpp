@@ -1,11 +1,10 @@
 #include "ui/ExplorerPage.h"
 
 #include "crypto/CereblixCrypto.h"
+#include "util/PageLayout.h"
 
-#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QVBoxLayout>
 
 namespace Cereblix {
 
@@ -13,29 +12,42 @@ ExplorerPage::ExplorerPage(MainWindow *window, QWidget *parent)
     : QWidget(parent)
     , m_window(window)
 {
-    auto *layout = new QVBoxLayout(this);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QVBoxLayout *layout = nullptr;
+    QWidget *inner = attachScrollablePage(this, &layout);
+
+    auto *title = new QLabel(QStringLiteral("Explorer"), inner);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    auto *hint = new QLabel(QStringLiteral("Look up transactions and addresses on the network."), inner);
+    hint->setObjectName(QStringLiteral("pageHint"));
+    layout->addWidget(title);
+    layout->addWidget(hint);
 
     auto *txRow = new QHBoxLayout;
-    m_txEdit = new QLineEdit(this);
+    m_txEdit = new QLineEdit(inner);
     m_txEdit->setPlaceholderText(QStringLiteral("Transaction ID (64 hex)"));
-    auto *txBtn = new QPushButton(QStringLiteral("Look up tx"), this);
+    auto *txBtn = new QPushButton(QStringLiteral("Look up tx"), inner);
+    txBtn->setProperty("primary", true);
     txRow->addWidget(m_txEdit, 1);
     txRow->addWidget(txBtn);
 
     auto *addrRow = new QHBoxLayout;
-    m_addrEdit = new QLineEdit(this);
+    m_addrEdit = new QLineEdit(inner);
     m_addrEdit->setPlaceholderText(QStringLiteral("crb1… address"));
-    auto *addrBtn = new QPushButton(QStringLiteral("Look up address"), this);
+    auto *addrBtn = new QPushButton(QStringLiteral("Look up address"), inner);
     addrRow->addWidget(m_addrEdit, 1);
     addrRow->addWidget(addrBtn);
 
-    m_output = new QTextEdit(this);
+    m_output = new QTextEdit(inner);
     m_output->setReadOnly(true);
     m_output->setFontFamily(QStringLiteral("Consolas"));
+    m_output->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_output->setMinimumHeight(120);
 
-    layout->addWidget(new QLabel(QStringLiteral("Transaction lookup"), this));
+    layout->addWidget(new QLabel(QStringLiteral("Transaction lookup"), inner));
     layout->addLayout(txRow);
-    layout->addWidget(new QLabel(QStringLiteral("Address lookup"), this));
+    layout->addWidget(new QLabel(QStringLiteral("Address lookup"), inner));
     layout->addLayout(addrRow);
     layout->addWidget(m_output, 1);
 

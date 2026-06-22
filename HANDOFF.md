@@ -10,7 +10,10 @@ Native **Qt 6 / C++** desktop wallet for Cereblix (CRB). Compatible with the off
 | `cereblix/` | Upstream Cereblix node + CLI wallet (clone/build separately) |
 | `qt6/` | Local Qt 6.8.3 MSVC install (via aqtinstall; not committed) |
 | `tools/deploy.ps1` | Copy Qt/libsodium/TLS plugins next to the `.exe` |
-| `tools/crypto_validate.ps1` | Self-test + CLI wallet encryption smoke test |
+| `tools/package_release_windows.ps1` | Build + zip portable Windows x64 release |
+| `tools/build-linux.sh` | Build on Linux (Qt 6 + libsodium) |
+| `tools/package_release_linux.sh` | Build + tarball with `cereblix-qt-wallet.sh` launcher |
+| `tools/cereblix-qt-wallet.sh` | Linux launcher script (shipped in release tarball) |
 
 ## Build (Windows, MSVC)
 
@@ -47,7 +50,7 @@ Environment: `CEREBRA_PASSPHRASE` — auto-unlock encrypted wallet on startup (v
 
 - Default path: `%USERPROFILE%\.cereblix\wallet.json` (same as Go CLI)
 - Format: JSON with ed25519 keys (`crb1…` addresses)
-- Encryption: **PBKDF2-HMAC-SHA256** (200k iterations, RFC 2898) + AES-256-GCM (libsodium, requires AES-NI)
+- Encryption: **PBKDF2-HMAC-SHA256** (200k iterations, RFC 2898) + AES-256-GCM (libsodium, requires AES-NI). Iteration count is shared with Go CLI (`kdfIters = 200_000`); see [SECURITY.md](SECURITY.md) for why it is not raised to ~600k unilaterally.
 - Minimum passphrase: **12 characters** (Qt wallet; Go CLI allows 6)
 - Linux: wallet file saved with mode `0600`
 - Settings persisted via `QSettings` (registry on Windows): RPC URL, wallet path, local node options
@@ -147,7 +150,7 @@ See **[SECURITY.md](SECURITY.md)** for threat model, encryption details, and ope
 1. Explorer tab covers `/tx` and `/balance`+`/history` only — not full block explorer.
 2. History RBF buttons appear on all rows; replacements only work for your own pending outgoing txs.
 3. No installer/MSI yet — ship `build/Release/` folder after `deploy.ps1`.
-4. Linux/macOS builds are possible with CMake + Qt6 + libsodium but not CI-tested in this repo.
+4. Linux builds: `tools/package_release_linux.sh` (Ubuntu/Debian with `qt6-base-dev` + `libsodium-dev`). CI: `.github/workflows/release.yml`.
 
 ## License
 

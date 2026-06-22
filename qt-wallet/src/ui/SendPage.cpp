@@ -1,11 +1,12 @@
 #include "ui/SendPage.h"
 
 #include "crypto/CereblixCrypto.h"
+#include "util/PageLayout.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QLabel>
 #include <QMessageBox>
-#include <QVBoxLayout>
 
 namespace Cereblix {
 
@@ -13,25 +14,43 @@ SendPage::SendPage(MainWindow *window, QWidget *parent)
     : QWidget(parent)
     , m_window(window)
 {
-    auto *layout = new QVBoxLayout(this);
-    auto *form = new QFormLayout;
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    m_fromCombo = new QComboBox(this);
-    m_toEdit = new QLineEdit(this);
+    QVBoxLayout *layout = nullptr;
+    QWidget *inner = attachScrollablePage(this, &layout);
+
+    auto *title = new QLabel(QStringLiteral("Send"), inner);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    auto *hint =
+        new QLabel(QStringLiteral("Funds are signed on this device — review the confirmation before sending."),
+                   inner);
+    hint->setObjectName(QStringLiteral("pageHint"));
+    layout->addWidget(title);
+    layout->addWidget(hint);
+
+    auto *formCard = new QGroupBox(QStringLiteral("Transaction"), inner);
+    formCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    auto *form = new QFormLayout(formCard);
+    form->setContentsMargins(8, 12, 8, 12);
+    form->setSpacing(12);
+
+    m_fromCombo = new QComboBox(formCard);
+    m_toEdit = new QLineEdit(formCard);
     m_toEdit->setPlaceholderText(QStringLiteral("crb1…"));
-    m_amountEdit = new QLineEdit(this);
+    m_amountEdit = new QLineEdit(formCard);
     m_amountEdit->setPlaceholderText(QStringLiteral("12.5"));
-    m_feeEdit = new QLineEdit(this);
-    m_sendButton = new QPushButton(QStringLiteral("Send"), this);
+    m_feeEdit = new QLineEdit(formCard);
+    m_sendButton = new QPushButton(QStringLiteral("Review & send"), inner);
+    m_sendButton->setProperty("primary", true);
 
     form->addRow(QStringLiteral("From"), m_fromCombo);
     form->addRow(QStringLiteral("To"), m_toEdit);
     form->addRow(QStringLiteral("Amount (CRB)"), m_amountEdit);
     form->addRow(QStringLiteral("Fee (CRB)"), m_feeEdit);
 
-    layout->addLayout(form);
+    layout->addWidget(formCard);
     layout->addWidget(m_sendButton);
-    layout->addStretch();
+    layout->addStretch(1);
 
     connect(m_sendButton, &QPushButton::clicked, this, &SendPage::onSendClicked);
 }

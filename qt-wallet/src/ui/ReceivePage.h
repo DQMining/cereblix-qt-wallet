@@ -27,6 +27,9 @@ private:
     QPushButton *m_createButton = nullptr;
 
     void updateQr();
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 };
 
 } // namespace Cereblix

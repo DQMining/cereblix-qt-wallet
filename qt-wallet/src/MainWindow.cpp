@@ -15,6 +15,13 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QDateTime>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QIcon>
+#include <QLabel>
+#include <QPixmap>
+#include <QSizeGrip>
+#include <QVBoxLayout>
 #include <cstdlib>
 #include <sodium.h>
 
@@ -98,9 +105,67 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUi()
 {
     setWindowTitle(QStringLiteral("Cereblix Wallet"));
-    resize(1024, 700);
+    setWindowIcon(QIcon(QStringLiteral(":/images/cereblix-coin.ico")));
+    setMinimumSize(640, 480);
+    resize(1080, 720);
 
-    m_tabs = new QTabWidget(this);
+    auto *central = new QWidget(this);
+    central->setObjectName(QStringLiteral("centralWidget"));
+    central->setMinimumSize(0, 0);
+    central->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto *rootLayout = new QVBoxLayout(central);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
+
+    auto *header = new QFrame(central);
+    header->setObjectName(QStringLiteral("appHeader"));
+    header->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto *headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(24, 16, 24, 16);
+
+    auto *titleCol = new QVBoxLayout;
+    titleCol->setSpacing(2);
+
+    auto *brandRow = new QHBoxLayout;
+    brandRow->setSpacing(12);
+    auto *coinLogo = new QLabel(header);
+    coinLogo->setObjectName(QStringLiteral("headerCoin"));
+    {
+        const QPixmap pix(QStringLiteral(":/images/cereblix-coin-64.png"));
+        coinLogo->setPixmap(
+            pix.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    coinLogo->setFixedSize(48, 48);
+    coinLogo->setAlignment(Qt::AlignCenter);
+    coinLogo->setAttribute(Qt::WA_TranslucentBackground);
+
+    auto *titleStack = new QVBoxLayout;
+    titleStack->setSpacing(2);
+    auto *titleLabel = new QLabel(QStringLiteral("Cereblix Wallet"), header);
+    titleLabel->setObjectName(QStringLiteral("appTitle"));
+    titleLabel->setAttribute(Qt::WA_TranslucentBackground);
+    auto *subtitleLabel = new QLabel(QStringLiteral("Simple · Secure · Local signing"), header);
+    subtitleLabel->setObjectName(QStringLiteral("appSubtitle"));
+    subtitleLabel->setAttribute(Qt::WA_TranslucentBackground);
+    titleStack->addWidget(titleLabel);
+    titleStack->addWidget(subtitleLabel);
+
+    brandRow->addWidget(coinLogo);
+    brandRow->addLayout(titleStack);
+    titleCol->addLayout(brandRow);
+
+    auto *badge = new QLabel(QStringLiteral("CRB"), header);
+    badge->setObjectName(QStringLiteral("headerBadge"));
+    badge->setAlignment(Qt::AlignCenter);
+
+    headerLayout->addLayout(titleCol);
+    headerLayout->addStretch();
+    headerLayout->addWidget(badge);
+
+    m_tabs = new QTabWidget(central);
+    m_tabs->setDocumentMode(true);
+    m_tabs->setMinimumSize(0, 0);
+    m_tabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_overview = new OverviewPage(this, m_tabs);
     m_receive = new ReceivePage(this, m_tabs);
     m_send = new SendPage(this, m_tabs);
@@ -117,8 +182,11 @@ void MainWindow::setupUi()
     m_tabs->addTab(m_explorer, QStringLiteral("Explorer"));
     m_tabs->addTab(m_settings, QStringLiteral("Settings"));
 
-    setCentralWidget(m_tabs);
+    rootLayout->addWidget(header);
+    rootLayout->addWidget(m_tabs, 1);
+    setCentralWidget(central);
     statusBar()->showMessage(QStringLiteral("Ready"));
+    statusBar()->addPermanentWidget(new QSizeGrip(this));
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
     fileMenu->addAction(QStringLiteral("&Refresh"), this, &MainWindow::refreshAll);

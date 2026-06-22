@@ -3,9 +3,11 @@
 #include "MainWindow.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSlider>
 #include <QWidget>
 
 namespace Cereblix {
@@ -24,9 +26,14 @@ private slots:
     void encryptWallet();
     void toggleLocalNode(bool enabled);
     void browseWallet();
+    void onThemeChanged(int index);
+    void onUiScaleChanged(int value);
 
 private:
     MainWindow *m_window;
+    QComboBox *m_themeCombo = nullptr;
+    QSlider *m_uiScaleSlider = nullptr;
+    QLabel *m_uiScaleLabel = nullptr;
     QLineEdit *m_rpcEdit = nullptr;
     QLineEdit *m_walletPathEdit = nullptr;
     QLineEdit *m_nodeBinaryEdit = nullptr;

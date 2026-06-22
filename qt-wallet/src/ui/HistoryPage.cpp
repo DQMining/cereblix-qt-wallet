@@ -1,6 +1,7 @@
 #include "ui/HistoryPage.h"
 
 #include "crypto/CereblixCrypto.h"
+#include "util/PageLayout.h"
 
 #include <algorithm>
 
@@ -20,18 +21,28 @@ HistoryPage::HistoryPage(MainWindow *window, QWidget *parent)
     , m_window(window)
     , m_refreshGen(0)
 {
-    auto *layout = new QVBoxLayout(this);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QVBoxLayout *layout = nullptr;
+    QWidget *inner = attachScrollablePage(this, &layout);
+
+    auto *title = new QLabel(QStringLiteral("History"), inner);
+    title->setObjectName(QStringLiteral("pageTitle"));
+    layout->addWidget(title);
+
     auto *top = new QHBoxLayout;
-    top->addWidget(new QLabel(QStringLiteral("Address:"), this));
-    m_addressCombo = new QComboBox(this);
+    top->addWidget(new QLabel(QStringLiteral("Address:"), inner));
+    m_addressCombo = new QComboBox(inner);
     top->addWidget(m_addressCombo, 1);
     layout->addLayout(top);
 
-    m_pendingLabel = new QLabel(this);
+    m_pendingLabel = new QLabel(inner);
     m_pendingLabel->setWordWrap(true);
     layout->addWidget(m_pendingLabel);
 
-    m_table = new QTableWidget(0, 7, this);
+    m_table = new QTableWidget(0, 7, inner);
+    m_table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_table->setMinimumHeight(120);
     m_table->setHorizontalHeaderLabels(
         {QStringLiteral("Height"), QStringLiteral("Time"), QStringLiteral("Dir"),
          QStringLiteral("Amount"), QStringLiteral("Peer"), QStringLiteral("TxID"),
@@ -39,7 +50,7 @@ HistoryPage::HistoryPage(MainWindow *window, QWidget *parent)
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    layout->addWidget(m_table);
+    layout->addWidget(m_table, 1);
 
     connect(m_addressCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             &HistoryPage::refresh);
