@@ -70,7 +70,11 @@ bool AppTheme::isDark()
         return true;
     if (s_mode == ThemeMode::Light)
         return false;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+#else
+    return false;
+#endif
 }
 
 void AppTheme::apply(QApplication *app)
