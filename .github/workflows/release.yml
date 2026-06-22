@@ -22,7 +22,6 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2022_64
-          modules: qtbase
 
       - name: Install vcpkg libsodium
         run: |
@@ -67,7 +66,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ qt6-base-dev qt6-base-dev-tools libsodium-dev
+          sudo apt-get install -y cmake g++ qt6-base-dev qt6-base-dev-tools libsodium-dev libxkbcommon-dev
 
       - name: Package Linux release
         run: |

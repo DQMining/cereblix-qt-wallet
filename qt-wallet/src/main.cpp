@@ -53,11 +53,13 @@ int main(int argc, char *argv[])
 
     Cereblix::AppTheme::apply(&app);
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     QObject::connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, &app,
                      [&app]() {
                          if (Cereblix::AppSettings::instance().themeMode() == QStringLiteral("system"))
                              Cereblix::AppTheme::apply(&app);
                      });
+#endif
 
     Cereblix::MainWindow window;
     window.show();
