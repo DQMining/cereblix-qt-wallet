@@ -10,7 +10,8 @@ Native **Qt 6 / C++** desktop wallet for Cereblix (CRB). Compatible with the off
 | `cereblix/` | Upstream Cereblix node + CLI wallet (clone/build separately) |
 | `qt6/` | Local Qt 6.8.3 MSVC install (via aqtinstall; not committed) |
 | `tools/deploy.ps1` | Copy Qt/libsodium/TLS plugins next to the `.exe` |
-| `tools/package_release_windows.ps1` | Build + zip portable Windows x64 release |
+| `tools/fetch_cereblixd.ps1` / `fetch_cereblixd.sh` | Download `cereblixd` from [CereblixCRB/cereblix releases](https://github.com/CereblixCRB/cereblix/releases) (default tag `v2.4.0`) |
+| `tools/package_release_windows.ps1` | Build + zip portable Windows x64 release (bundles `cereblixd.exe`) |
 | `tools/build-linux.sh` | Build on Linux (Qt 6 + libsodium) |
 | `tools/package_release_linux.sh` | Build + tarball with `cereblix-qt-wallet.sh` launcher |
 | `tools/cereblix-qt-wallet.sh` | Linux launcher script (shipped in release tarball) |
@@ -107,10 +108,14 @@ Run `tools/deploy.ps1` after every build.
 
 ## Local node (optional)
 
-Settings can spawn `cereblixd.exe` from:
+Settings can spawn `cereblixd` from:
 
-1. Same directory as the wallet `.exe`
-2. `../cereblix/cereblixd.exe` relative to the `.exe`
+1. Same directory as the wallet executable (`cereblixd.exe` / `cereblixd`)
+2. `../cereblix/cereblixd.exe` relative to the `.exe` (dev builds)
+
+Release packages bundle **cereblixd v2.4.0+** automatically (`tools/fetch_cereblixd.*`). Override with env `CEREBLIXD_TAG=v2.4.0` (Linux) or `-Tag v2.4.0` (PowerShell).
+
+See [Cereblix node v2.4.0](https://github.com/CereblixCRB/cereblix/releases/tag/v2.4.0) for node release notes. Public API users do not need to run a local node.
 
 While syncing, the wallet uses the public API; when the local node catches up it switches RPC to `http://127.0.0.1:18751/api`.
 

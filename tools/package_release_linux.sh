@@ -21,6 +21,9 @@ cp "$BIN" "$STAGE/"
 cp "$ROOT/tools/cereblix-qt-wallet.sh" "$STAGE/"
 chmod +x "$STAGE/cereblix-qt-wallet" "$STAGE/cereblix-qt-wallet.sh"
 
+chmod +x "$ROOT/tools/fetch_cereblixd.sh"
+"$ROOT/tools/fetch_cereblixd.sh" linux-amd64 "$STAGE/cereblixd"
+
 cat >"$STAGE/README.txt" <<'EOF'
 Cereblix Qt Wallet — Linux x64
 
@@ -31,6 +34,8 @@ Quick start:
 
 Runtime dependencies (Ubuntu/Debian):
   sudo apt install libqt6widgets6 libqt6network6 libsodium23
+
+Includes cereblixd (node v2.4.0+) for optional local full node in Settings.
 
 Wallet file: ~/.cereblix/wallet.json (same as the Go CLI wallet)
 EOF

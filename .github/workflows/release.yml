@@ -51,6 +51,7 @@ jobs:
           if (Test-Path "$qt/plugins/networkinformation/qnetworklistmanager.dll") {
             Copy-Item "$qt/plugins/networkinformation/qnetworklistmanager.dll" "$build/networkinformation/" -Force
           }
+          powershell -File tools/fetch_cereblixd.ps1 -Platform windows -OutFile "$build/cereblixd.exe"
           powershell -File tools/package_release_windows.ps1 -SkipBuild -SkipDeploy
 
       - uses: actions/upload-artifact@v4
@@ -70,7 +71,7 @@ jobs:
 
       - name: Package Linux release
         run: |
-          chmod +x tools/build-linux.sh tools/package_release_linux.sh tools/cereblix-qt-wallet.sh
+          chmod +x tools/build-linux.sh tools/package_release_linux.sh tools/cereblix-qt-wallet.sh tools/fetch_cereblixd.sh
           ./tools/package_release_linux.sh
 
       - uses: actions/upload-artifact@v4

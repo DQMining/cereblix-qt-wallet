@@ -30,10 +30,16 @@ Copy-Item "$QtPlugins\platforms\qwindows.dll" "$BuildDir\platforms\" -Force
 Copy-Item "$QtPlugins\tls\qschannelbackend.dll" "$BuildDir\tls\" -Force
 Copy-Item "$QtPlugins\networkinformation\qnetworklistmanager.dll" "$BuildDir\networkinformation\" -Force
 
-$Cereblixd = Join-Path $RepoRoot "cereblix\cereblixd.exe"
-if (Test-Path $Cereblixd) {
-    Copy-Item $Cereblixd $BuildDir -Force
-    Write-Host "Copied cereblixd.exe"
+$Cereblixd = Join-Path $BuildDir "cereblixd.exe"
+$LocalNode = Join-Path $RepoRoot "cereblix\cereblixd.exe"
+if (Test-Path $LocalNode) {
+    Copy-Item $LocalNode $Cereblixd -Force
+    Write-Host "Copied cereblixd.exe from cereblix/"
+} elseif (-not (Test-Path $Cereblixd)) {
+    & (Join-Path $PSScriptRoot "fetch_cereblixd.ps1") -Platform windows -OutFile $Cereblixd
+    Write-Host "Downloaded cereblixd.exe for local node (Settings)"
+} else {
+    Write-Host "Using existing cereblixd.exe in build folder"
 }
 
 Write-Host "Deployed runtime DLLs to $BuildDir"

@@ -25,8 +25,8 @@ Prebuilt packages (portable, no installer):
 
 | Platform | Package | Run |
 |----------|---------|-----|
-| **Windows x64** | `dist/cereblix-qt-wallet-windows-x64.zip` | Unzip and run `cereblix-qt-wallet.exe` |
-| **Linux x64** | `dist/cereblix-qt-wallet-linux-x64.tar.gz` | Extract and run `./cereblix-qt-wallet.sh` |
+| **Windows x64** | `dist/cereblix-qt-wallet-windows-x64.zip` | Unzip and run `cereblix-qt-wallet.exe` (includes `cereblixd.exe`) |
+| **Linux x64** | `dist/cereblix-qt-wallet-linux-x64.tar.gz` | Extract and run `./cereblix-qt-wallet.sh` (includes `cereblixd`) |
 
 Build locally:
 

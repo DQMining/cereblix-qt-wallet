@@ -41,6 +41,14 @@ foreach ($dir in @("platforms", "tls", "networkinformation")) {
     }
 }
 
+$StageNode = Join-Path $Stage "cereblixd.exe"
+$BuildNode = Join-Path $BuildDir "cereblixd.exe"
+if (Test-Path $BuildNode) {
+    Copy-Item $BuildNode $StageNode -Force
+} else {
+    & (Join-Path $PSScriptRoot "fetch_cereblixd.ps1") -Platform windows -OutFile $StageNode
+}
+
 @"
 Cereblix Qt Wallet — Windows x64
 
@@ -48,6 +56,7 @@ Unzip this folder and run:
   cereblix-qt-wallet.exe
 
 Includes Qt TLS plugins for https://cereblix.com/api
+Includes cereblixd.exe (node v2.4.0+) for optional local full node in Settings.
 
 Wallet file: %USERPROFILE%\.cereblix\wallet.json (same as the Go CLI wallet)
 
